@@ -4,7 +4,7 @@
 # educational purposes provided that (1) you do not distribute or publish
 # solutions, (2) you retain this notice, and (3) you provide clear
 # attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
+#
 # Attribution Information: The Pacman AI projects were developed at UC Berkeley.
 # The core projects and autograders were primarily created by John DeNero
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
@@ -102,25 +102,55 @@ class MinimaxAgent(MultiAgentSearchAgent):
     """
       Your minimax agent (question 2)
     """
+    def max_value(self, gameState, depth):
+        """
+            Acts as the max-value function in our recurssive minimax algorithm.
+            Uses agentIndex = 0 because pacman wants to maximize.
+        """
+        if depth == self.depth:
+            return None, self.evaluationFunction(gameState)
+        actions = gameState.getLegalActions(0)
+        # print "actions: {}".format(actions)
+        max_val = -float("inf")
+        action = None
+        for a in actions:
+            successor_state = gameState.generateSuccessor(0, a)
+            # print "successor_state:\n{}".format(successor_state)
+            next_action, result = self.min_value(successor_state, depth, 1)
+            if result > max_val:
+                max_val = result
+                action = a
+        # print "action: {}\nmax_val: {}".format(action, max_val)
+        return action, max_val
+
+    def min_value(self, gameState, depth, agentIndex):
+        """
+            Acts as the min-value function in our recurssive minimax algorithm.
+            Takes agentIndex to run multiple mins given multiple ghosts
+        """
+        # print "({},{})".format(depth, agentIndex)
+        if agentIndex == gameState.getNumAgents():
+            return self.max_value(gameState, depth+1)
+        min_val = float("inf")
+        actions = gameState.getLegalActions(agentIndex)
+        action = None
+        for a in actions:
+            successor_state = gameState.generateSuccessor(agentIndex, a)
+            # print "successor_state:\n{}".format(successor_state)
+            next_action, result = self.min_value(successor_state, depth, agentIndex + 1)
+            if result < min_val:
+                action = a
+                min_val = result
+        # print "action: {}\nmin_val: {}".format(action, min_val)
+        return action, min_val
 
     def getAction(self, gameState):
         """
           Returns the minimax action from the current gameState using self.depth
           and self.evaluationFunction.
-
-          Here are some method calls that might be useful when implementing minimax.
-
-          gameState.getLegalActions(agentIndex):
-            Returns a list of legal actions for an agent
-            agentIndex=0 means Pacman, ghosts are >= 1
-
-          gameState.generateSuccessor(agentIndex, action):
-            Returns the successor game state after an agent takes an action
-
-          gameState.getNumAgents():
-            Returns the total number of agents in the game
         """
-        "*** YOUR CODE HERE ***"
+        action, val = self.max_value(gameState, 0)
+        return action
         util.raiseNotDefined()
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
@@ -162,4 +192,3 @@ def betterEvaluationFunction(currentGameState):
 
 # Abbreviation
 better = betterEvaluationFunction
-

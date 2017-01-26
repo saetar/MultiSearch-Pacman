@@ -1,10 +1,10 @@
 1) Question 1 in the project provides an example where minimax predicts Pacman will do quite poorly, but he actually often wins the game. Briefly explain why this might occur. (There are a number of possible responses to this question; you need only give one.)
 
 
-2) Describe the evaluation function in Question 5 - what features does it include, how do you combine them. This can be copied/pasted from your comments in the code; it's mainly here to make sure that somewhere, you describe your function! 
+2) Describe the evaluation function in Question 5 - what features does it include, how do you combine them. This can be copied/pasted from your comments in the code; it's mainly here to make sure that somewhere, you describe your function!
 
 
-3) MCTS: Run your algorithm for 15 games with rollouts set to 75. This may take a little time, but not more than a minute or two. How many games does player 1 win? 
+3) MCTS: Run your algorithm for 15 games with rollouts set to 75. This may take a little time, but not more than a minute or two. How many games does player 1 win?
 
 4) Repeat (4), except now make MCTS player 2. How many games does player 1 win? (If your answers to (4) and (5) don't make sense to you based on which player should be the smarter player, you probably have an error in your implementation.)
 
