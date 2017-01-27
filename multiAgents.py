@@ -110,17 +110,14 @@ class MinimaxAgent(MultiAgentSearchAgent):
         if depth == self.depth:
             return None, self.evaluationFunction(gameState)
         actions = gameState.getLegalActions(0)
-        # print "actions: {}".format(actions)
         max_val = -float("inf")
         action = None
         for a in actions:
             successor_state = gameState.generateSuccessor(0, a)
-            # print "successor_state:\n{}".format(successor_state)
             next_action, result = self.min_value(successor_state, depth, 1)
             if result > max_val:
                 max_val = result
                 action = a
-        # print "action: {}\nmax_val: {}".format(action, max_val)
         return action, max_val
 
     def min_value(self, gameState, depth, agentIndex):
@@ -151,18 +148,54 @@ class MinimaxAgent(MultiAgentSearchAgent):
         """
         action, val = self.max_value(gameState, 0)
         return action
-        util.raiseNotDefined()
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
       Your minimax agent with alpha-beta pruning (question 3)
     """
+    def max_value(self, gameState, depth, alpha, beta):
+        """
+            Acts as the max-value function in our recurssive minimax algorithm.
+            Uses agentIndex = 0 because pacman wants to maximize.
+        """
+        if depth == self.depth:
+            return None, self.evaluationFunction(gameState)
+        actions = gameState.getLegalActions(0)
+        max_val = -float("inf")
+        action = None
+        for a in actions:
+            successor_state = gameState.generateSuccessor(0, a)
+            next_action, result = self.min_value(successor_state, depth, 1)
+            if result > max_val:
+                max_val = result
+                action = a
+        return action, max_val
 
+    def min_value(self, gameState, depth, agentIndex, alpha, beta):
+        """
+            Acts as the min-value function in our recurssive minimax algorithm.
+            Takes agentIndex to run multiple mins given multiple ghosts
+        """
+        # print "({},{})".format(depth, agentIndex)
+        if agentIndex == gameState.getNumAgents():
+            return self.max_value(gameState, depth+1)
+        min_val = float("inf")
+        actions = gameState.getLegalActions(agentIndex)
+        action = None
+        for a in actions:
+            successor_state = gameState.generateSuccessor(agentIndex, a)
+            # print "successor_state:\n{}".format(successor_state)
+            next_action, result = self.min_value(successor_state, depth, agentIndex + 1)
+            if result < min_val:
+                action = a
+                min_val = result
+        # print "action: {}\nmin_val: {}".format(action, min_val)
+        return action, min_val
     def getAction(self, gameState):
         """
           Returns the minimax action using self.depth and self.evaluationFunction
         """
-        "*** YOUR CODE HERE ***"
+        action, val = self.max_value(gameState, depth, float('-inf'), float('inf'))
         util.raiseNotDefined()
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
