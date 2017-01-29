@@ -165,10 +165,13 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         action = None
         for a in actions:
             successor_state = gameState.generateSuccessor(0, a)
-            next_action, result = self.min_value(successor_state, depth, 1)
+            next_action, result = self.min_value(successor_state, depth, 1, alpha, beta)
             if result > max_val:
                 max_val = result
                 action = a
+                alpha = max_val
+            if max_val > beta:
+                return action, max_val
         return action, max_val
 
     def min_value(self, gameState, depth, agentIndex, alpha, beta):
@@ -178,30 +181,71 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         """
         # print "({},{})".format(depth, agentIndex)
         if agentIndex == gameState.getNumAgents():
-            return self.max_value(gameState, depth+1)
+            return self.max_value(gameState, depth+1, alpha, beta)
         min_val = float("inf")
         actions = gameState.getLegalActions(agentIndex)
         action = None
         for a in actions:
             successor_state = gameState.generateSuccessor(agentIndex, a)
-            # print "successor_state:\n{}".format(successor_state)
-            next_action, result = self.min_value(successor_state, depth, agentIndex + 1)
+            next_action, result = self.min_value(successor_state, depth, agentIndex + 1, alpha, beta)
             if result < min_val:
                 action = a
                 min_val = result
-        # print "action: {}\nmin_val: {}".format(action, min_val)
+                beta = result
+            if min_val < alpha:
+                return action, min_val
         return action, min_val
+
     def getAction(self, gameState):
         """
           Returns the minimax action using self.depth and self.evaluationFunction
         """
-        action, val = self.max_value(gameState, depth, float('-inf'), float('inf'))
-        util.raiseNotDefined()
+        action, val = self.max_value(gameState, 0, float('-inf'), float('inf'))
+        return action
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
       Your expectimax agent (question 4)
     """
+    def max_value(self, gameState, depth):
+        """
+            Acts as the max-value function in our recurssive minimax algorithm.
+            Uses agentIndex = 0 because pacman wants to maximize.
+        """
+        if depth == self.depth:
+            return None, self.evaluationFunction(gameState)
+        actions = gameState.getLegalActions(0)
+        max_val = -float("inf")
+        action = None
+        for a in actions:
+            successor_state = gameState.generateSuccessor(0, a)
+            next_action, result = self.expect_value(successor_state, depth, 1)
+            if result > max_val:
+                max_val = result
+                action = a
+        return action, max_val
+
+    def expect_value(self, gameState, depth, agentIndex):
+        """
+            Acts as the min-value function in our recurssive minimax algorithm.
+            Takes agentIndex to run multiple mins given multiple ghosts
+        """
+        if agentIndex == gameState.getNumAgents():
+            return self.max_value(gameState, depth+1)
+        total_val = 0
+        actions = gameState.getLegalActions(agentIndex)
+        action = None
+        for a in actions:
+            successor_state = gameState.generateSuccessor(agentIndex, a)
+            result = self.expect_value(successor_state, depth, agentIndex + 1)
+            total_val += result
+        score = 0
+        if len(actions) == 0:
+            score = float('-inf')
+        else:
+            score = float(total_val) / len(actions)
+        return score
+
 
     def getAction(self, gameState):
         """
@@ -210,8 +254,8 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
           All ghosts should be modeled as choosing uniformly at random from their
           legal moves.
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        action, result = self.max_value(gameState, 0)
+        return action
 
 def betterEvaluationFunction(currentGameState):
     """
