@@ -1,5 +1,7 @@
 1) Question 1 in the project provides an example where minimax predicts Pacman will do quite poorly, but he actually often wins the game. Briefly explain why this might occur. (There are a number of possible responses to this question; you need only give one.)
-
+In order for Pacman to win the game, he need only collect all the dots without getting eaten.
+With Minimax, we can avoid ghosts relatively successfully for a while, and collect dots until
+the game is over. This does not mean Pacman operated optimally. 
 
 2) Describe the evaluation function in Question 5 - what features does it include, how do you combine them. This can be copied/pasted from your comments in the code; it's mainly here to make sure that somewhere, you describe your function!
 
