@@ -107,11 +107,13 @@ class MinimaxAgent(MultiAgentSearchAgent):
             Acts as the max-value function in our recurssive minimax algorithm.
             Uses agentIndex = 0 because pacman wants to maximize.
         """
-        if depth == self.depth:
-            return None, self.evaluationFunction(gameState)
-        actions = gameState.getLegalActions(0)
         max_val = -float("inf")
+        actions = gameState.getLegalActions(0)
+        if depth == self.depth or len(actions) == 0:
+            return None, self.evaluationFunction(gameState)
         action = None
+        if len(actions) == 0:
+            print "depth: {}\ngameState: {}".format(depth, gameState)
         for a in actions:
             successor_state = gameState.generateSuccessor(0, a)
             next_action, result = self.min_value(successor_state, depth, 1)
@@ -125,20 +127,19 @@ class MinimaxAgent(MultiAgentSearchAgent):
             Acts as the min-value function in our recurssive minimax algorithm.
             Takes agentIndex to run multiple mins given multiple ghosts
         """
-        # print "({},{})".format(depth, agentIndex)
         if agentIndex == gameState.getNumAgents():
             return self.max_value(gameState, depth+1)
         min_val = float("inf")
         actions = gameState.getLegalActions(agentIndex)
+        if len(actions) == 0:
+            return None, self.evaluationFunction(gameState)
         action = None
         for a in actions:
             successor_state = gameState.generateSuccessor(agentIndex, a)
-            # print "successor_state:\n{}".format(successor_state)
             next_action, result = self.min_value(successor_state, depth, agentIndex + 1)
             if result < min_val:
                 action = a
                 min_val = result
-        # print "action: {}\nmin_val: {}".format(action, min_val)
         return action, min_val
 
     def getAction(self, gameState):
@@ -146,7 +147,8 @@ class MinimaxAgent(MultiAgentSearchAgent):
           Returns the minimax action from the current gameState using self.depth
           and self.evaluationFunction.
         """
-        action, val = self.max_value(gameState, 0)
+        action, results = self.max_value(gameState, 0)
+        actions = gameState.getLegalActions(0)
         return action
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
@@ -158,9 +160,9 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
             Acts as the max-value function in our recurssive minimax algorithm.
             Uses agentIndex = 0 because pacman wants to maximize.
         """
-        if depth == self.depth:
-            return None, self.evaluationFunction(gameState)
         actions = gameState.getLegalActions(0)
+        if depth == self.depth or len(actions) == 0:
+            return None, self.evaluationFunction(gameState)
         max_val = -float("inf")
         action = None
         for a in actions:
@@ -170,8 +172,8 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
                 max_val = result
                 action = a
                 alpha = max_val
-            if max_val > beta:
-                return action, max_val
+            if alpha > beta:
+                break
         return action, max_val
 
     def min_value(self, gameState, depth, agentIndex, alpha, beta):
@@ -179,12 +181,13 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
             Acts as the min-value function in our recurssive minimax algorithm.
             Takes agentIndex to run multiple mins given multiple ghosts
         """
-        # print "({},{})".format(depth, agentIndex)
         if agentIndex == gameState.getNumAgents():
             return self.max_value(gameState, depth+1, alpha, beta)
         min_val = float("inf")
         actions = gameState.getLegalActions(agentIndex)
         action = None
+        if len(actions) == 0:
+            return action, self.evaluationFunction(gameState)
         for a in actions:
             successor_state = gameState.generateSuccessor(agentIndex, a)
             next_action, result = self.min_value(successor_state, depth, agentIndex + 1, alpha, beta)
@@ -192,8 +195,8 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
                 action = a
                 min_val = result
                 beta = result
-            if min_val < alpha:
-                return action, min_val
+            if beta < alpha:
+                break
         return action, min_val
 
     def getAction(self, gameState):
@@ -219,7 +222,7 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         action = None
         for a in actions:
             successor_state = gameState.generateSuccessor(0, a)
-            next_action, result = self.expect_value(successor_state, depth, 1)
+            result = self.expect_value(successor_state, depth, 1)
             if result > max_val:
                 max_val = result
                 action = a
@@ -227,23 +230,26 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
 
     def expect_value(self, gameState, depth, agentIndex):
         """
-            Acts as the min-value function in our recurssive minimax algorithm.
+            Acts as the expected-value function in our recurssive minimax algorithm.
             Takes agentIndex to run multiple mins given multiple ghosts
         """
         if agentIndex == gameState.getNumAgents():
-            return self.max_value(gameState, depth+1)
+            action, max_val = self.max_value(gameState, depth+1)
+            return max_val
         total_val = 0
         actions = gameState.getLegalActions(agentIndex)
         action = None
         for a in actions:
             successor_state = gameState.generateSuccessor(agentIndex, a)
             result = self.expect_value(successor_state, depth, agentIndex + 1)
+            print "result: {}".format(result)
             total_val += result
         score = 0
         if len(actions) == 0:
             score = float('-inf')
         else:
             score = float(total_val) / len(actions)
+        print "score: {}".format(score)
         return score
 
 
