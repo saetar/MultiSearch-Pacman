@@ -215,9 +215,9 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
             Acts as the max-value function in our recurssive minimax algorithm.
             Uses agentIndex = 0 because pacman wants to maximize.
         """
-        if depth == self.depth:
-            return None, self.evaluationFunction(gameState)
         actions = gameState.getLegalActions(0)
+        if depth == self.depth or len(actions) == 0:
+            return None, self.evaluationFunction(gameState)
         max_val = -float("inf")
         action = None
         for a in actions:
@@ -238,18 +238,18 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
             return max_val
         total_val = 0
         actions = gameState.getLegalActions(agentIndex)
+        if len(actions) == 0:
+            return self.evaluationFunction(gameState)
         action = None
         for a in actions:
             successor_state = gameState.generateSuccessor(agentIndex, a)
             result = self.expect_value(successor_state, depth, agentIndex + 1)
-            print "result: {}".format(result)
             total_val += result
         score = 0
         if len(actions) == 0:
             score = float('-inf')
         else:
             score = float(total_val) / len(actions)
-        print "score: {}".format(score)
         return score
 
 
