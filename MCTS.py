@@ -53,19 +53,21 @@ class Node(object):
         to the win percentage for the player at this node (accounting for draws as in
         the project description).
         """
-        return self.value
+        return float(self.value) / self.visits
 
     def updateValue(self, outcome):
         """Updates the value estimate for the node's state.
         outcome: +1 for 1st player win, -1 for 2nd player win, 0 for draw."""
+        result = 0
+        if outcome == 0:
+            result = 0.5
+        elif outcome == self.state.turn:
+            result = 1
         if math.isnan(self.value):
-            self.value = int(outcome == self.state.turn)
-            self.visits += 1
+            self.value = result
         else:
-            value = self.value * self.visits
-            value += int(outcome == self.state.turn)
-            self.visits += 1
-            self.value = float(value) / float(self.visits)
+            self.value += result
+        self.visits += 1
 
     def UCBWeight(self):
         """Weight from the UCB formula used by parent to select a child.
@@ -75,14 +77,20 @@ class Node(object):
         visits and n is our visits
         """
         v = self.getValue()
-        d = math.sqrt(math.log(self.parent.visits) / self.visits)
+        d = math.sqrt(math.log(self.parent.visits) / float(self.visits))
         return v + UCB_CONST * d
 
-def select(node):
+def select(node, depth=0):
     """Takes a node and recurssively picks children by the following rules:
     If a child has not been visited, add it to the tree and return it to be
     explored. Otherwise, recurssively go to a child with probability
     proportional to their UCBWeights.
+    parameters:
+        node: a node in the MCTS tree
+        depth: depth of tree atm for testing purposes
+    returns:
+        Either node if node is terminal, or an unexpanded child of node attained
+        via tree policy
     """
     if node.state.isTerminal():
         return node
@@ -94,15 +102,19 @@ def select(node):
             return node.children[m]
     if move == None:
         ucbWeights = [child.UCBWeight() for move, child in node.children.items()]
-        totalUCB = sum(ucbWeights)
-        proportions = [ucb/totalUCB for ucb in ucbWeights]
+        newWeights = map(lambda n: n - min(ucbWeights), ucbWeights)
+        totalUCB = sum(newWeights)
+        proportions = [1.0/len(newWeights) for i in range(len(newWeights))]
+        if not totalUCB == 0:
+            proportions = [ucb/totalUCB for ucb in newWeights]
         move = np.random.choice(moves, p=proportions)
-        return select(node.children[move])
+        return select(node.children[move], depth+1)
 
 def simulate(state):
     """Takes leaf node of MCTS's state and simulates a run down to a
-    terminal, randomly choosing a move at each step. Returns the value for the
-    simulation."""
+    terminal, randomly choosing a move at each step.
+    Returns:
+        the value for the simulation."""
     if state.isTerminal():
         return state.value()
     moves = state.getMoves()
@@ -122,6 +134,18 @@ def rollout(root):
     new_value = simulate(node.state)
     backpropagate(node, new_value, root)
 
+def getBestMove(root):
+    move = None
+    max_value = -float('inf')
+    children = root.children.items()
+    for m, node in root.children.items():
+        v = node.getValue()
+        if v > max_value:
+            print "value: {}".format(v)
+            max_value = v
+            move = m
+    return move
+
 def MCTS(root, rollouts):
     """Select a move by Monte Carlo tree search.
     Plays rollouts random games from the root node to a terminal state.
@@ -139,14 +163,8 @@ def MCTS(root, rollouts):
     """
     for i in range(rollouts):
         rollout(root)
-    move = None
-    max_value = -float('inf')
-    for m, state in root.children.items():
-        v = state.getValue()
-        if v > max_value:
-            max_value = v
-            move = m
-    return m
+    move = getBestMove(root)
+    return move
 
 
 def parse_args():
