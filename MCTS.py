@@ -15,7 +15,7 @@ import game1
 import math
 
 # Whether to display the UCB rankings at each turn.
-DISPLAY_BOARDS = False 
+DISPLAY_BOARDS = False
 
 # UCB_CONST value - you should experiment with different values
 UCB_CONST = .5
@@ -23,7 +23,7 @@ UCB_CONST = .5
 
 class Node(object):
     """Node used in MCTS"""
-    
+
     def __init__(self, state, parent_node):
         """Constructor for a new node representing game state
         state. parent_node is the Node that is the parent of this
@@ -34,7 +34,7 @@ class Node(object):
         self.visits = 0
         self.value = float("nan")
         # Note: you may add additional fields if needed
-        
+
     def addMove(self, move):
         """
         Adds a new node for the child resulting from move if one doesn't already exist.
@@ -45,28 +45,82 @@ class Node(object):
             self.children[move] = Node(state, self)
             return True
         return False
-    
+
     def getValue(self):
         """
         Gets the value estimate for the current node. Value estimates should correspond
-        to the win percentage for the player at this node (accounting for draws as in 
+        to the win percentage for the player at this node (accounting for draws as in
         the project description).
         """
-        return value
+        return self.value
 
     def updateValue(self, outcome):
         """Updates the value estimate for the node's state.
         outcome: +1 for 1st player win, -1 for 2nd player win, 0 for draw."""
-        "*** YOUR CODE HERE ***"
-        # NOTE: which outcome is preferred depends on self.state.turn()
-        raise NotImplementedError("You must implement this method")
+        self.visits += 1  
+        if math.isnan(self.value):
+            self.value = outcome * self.state.turn
+        else:
+            value = self.value * self.visits
+            value += outcome * self.state.turn
+            self.value = float(value) / float(self.visits)
 
     def UCBWeight(self):
         """Weight from the UCB formula used by parent to select a child.
         This node will be selected by parent with probability proportional
-        to its weight."""
-        "*** YOUR CODE HERE ***"
-        raise NotImplementedError("You must implement this method")
+        to its weight.
+        Our selection policy relies on v_i + sqrt(log(N) / n) where N is parent
+        visits and n is our visits
+        """
+        v = self.getValue()
+        d = math.sqrt(math.log(self.parent.visits) / self.visits)
+        return v + UCB_CONST * d
+
+def select(node):
+    """Takes a node and recurssively picks children by the following rules:
+    If a child has not been visited, add it to the tree and return it to be
+    explored. Otherwise, recurssively go to a child with probability
+    proportional to their UCBWeights.
+    """
+    if node.state.isTerminal():
+        return node
+    moves = node.state.getMoves()
+    move = None
+    for m in moves:
+        added = node.addMove(m)
+        if added:
+            return node.children[m]
+    if move == None:
+        ucbWeights = [child.UCBWeight() for move, child in node.children.items()]
+        totalUCB = sum(ucbWeights)
+        proportions = [ucb/totalUCB for ucb in ucbWeights]
+        move = random.choice(moves, p=proportions)
+        return select(node.children[move])
+
+def simulate(state):
+    """Takes leaf node of MCTS's state and simulates a run down to a
+    terminal, randomly choosing a move at each step. Returns the value for the
+    simulation."""
+    if state.isTerminal():
+        return state.value()
+    moves = state.getMoves()
+    move = random.choice(moves)
+    return simulate(state.nextState(move))
+
+def rollout(root):
+    """Performs one rollout given the root node of MCTS."""
+    node = select(root)
+    new_value = simulate(node.state)
+    backpropagate(node, new_value, root)
+    print root.value
+
+def backpropagate(node, new_value, root):
+    """Takes a new_value and recurssively backpropagates the new value to update
+    up to the root node"""
+    node.updateValue(new_value)
+    if not node == root:
+        backpropagate(node.parent, new_value, root)
+
 
 def MCTS(root, rollouts):
     """Select a move by Monte Carlo tree search.
@@ -83,9 +137,8 @@ def MCTS(root, rollouts):
     Return:
         The legal move from node.state with the highest value estimate
     """
-    "*** YOUR CODE HERE ***"
-    # NOTE: you will need several helper functions
-    return randomMove(root) # Replace this line with a correct implementation
+    rollout(root)
+    raise NotImplementedError()
 
 
 def parse_args():
@@ -103,9 +156,9 @@ def parse_args():
                     "make display the board at each MCTS turn with MCTS's rankings of moves.")
     p.add_argument("--rolloutsSecondMCTSAgent", type=int, default=0, help="If non-0, other player "+\
                     "will also be an MCTS agent and will use the number of rollouts set with this "+\
-                    "argument. Default=0 (other player is random)")   
+                    "argument. Default=0 (other player is random)")
     p.add_argument("--ucbConst", type=float, default=.5, help="Value for the UCB exploration"+\
-                    "constant. Default=.5") 
+                    "constant. Default=.5")
     args = p.parse_args()
     if args.displayBoard:
         DISPLAY_BOARDS = True
@@ -123,7 +176,7 @@ def randomMove(node):
 
 def runMultipleGames(numGames, args):
     """
-    Runs numGames games, with no printing except for a report on which game 
+    Runs numGames games, with no printing except for a report on which game
     number is currently being played, and reports final number
     of games won by player 1 and draws. args specifies whether player 1 or
     player 2 is MCTS and how many rollouts to use. For multiple games, you
@@ -170,7 +223,7 @@ def playGame(args):
                 move = randomMove(node)
             else:
                 move = MCTS(node2, args.rolloutsSecondMCTSAgent)
-        
+
         node.addMove(move)
         node = node.children[move]
         if args.rolloutsSecondMCTSAgent != 0:
@@ -178,8 +231,8 @@ def playGame(args):
             node2 = node2.children[move]
     return node
 
-            
-    
+
+
 
 def main():
     """
@@ -188,13 +241,13 @@ def main():
     """
     # Get commandline arguments
     args = parse_args()
-    
+
     if args.numGames > 1:
         runMultipleGames(args.numGames, args)
     else:
         # Play the game
         node = playGame(args)
-    
+
         # Print result
         winner = node.state.value()
         print game1.print_board(node.state)
@@ -204,7 +257,7 @@ def main():
             print "Player 2 wins"
         else:
             print "It's a draw"
-            
-            
+
+
 if __name__ == "__main__":
     main()

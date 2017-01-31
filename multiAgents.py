@@ -268,10 +268,36 @@ def betterEvaluationFunction(currentGameState):
       Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable
       evaluation function (question 5).
 
-      DESCRIPTION: <write something here so we know what you did>
+      DESCRIPTION: The biggest goal is to collect all the food, so if len(food)
+      is 0, then that is the best score (+inf). Otherwise, we want that fewer
+      food is more desirable, so len(food) ** -1 gives us a food score.
+
+
     """
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    pos = currentGameState.getPacmanPosition()
+    food = currentGameState.getFood().asList()
+    if len(food) == 0:
+        return float('inf')
+    foodScore = len(food) ** -1
+    foodDist = sorted(map(lambda xy: dist(pos, xy), food))
+    closestFoodScore = foodDist[0]
+    foodDistScore = float(sum(foodDist))
+    ghostPos = [state.configuration.getPosition() for state
+        in currentGameState.getGhostStates()]
+    timeLeft = [ghostState.scaredTimer for ghostState
+        in currentGameState.getGhostStates()]
+    timeLeftScore = sum(timeLeft)
+    ghostDist = sorted(map(lambda xy: dist(pos, xy), ghostPos))
+    ignoreGhosts = False
+    if sum(ghostDist) > 10:
+        ignoreGhosts = True
+    ghostScore = ghostDist[0] if not ignoreGhosts else 0
+    total_score = (2 * foodScore) - (10 * ghostScore) + (2 * closestFoodScore) + (30 * timeLeftScore)
+    print "ghostScore: {}\n\tfoodScore: {}\n\ttotalScore: {}".format(ghostScore, foodScore, total_score)
+    return total_score
+
+def dist(xy1, xy2):
+    return abs(xy1[0] - xy2[0]) + abs(xy1[1] + xy2[1])
 
 # Abbreviation
 better = betterEvaluationFunction
