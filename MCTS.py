@@ -10,6 +10,7 @@ you can take a look at game1.py to get a sense of how the game is structured.
 import random
 import argparse
 import game1
+import numpy as np
 
 # You will want to use this import in your code
 import math
@@ -57,12 +58,13 @@ class Node(object):
     def updateValue(self, outcome):
         """Updates the value estimate for the node's state.
         outcome: +1 for 1st player win, -1 for 2nd player win, 0 for draw."""
-        self.visits += 1  
         if math.isnan(self.value):
-            self.value = outcome * self.state.turn
+            self.value = int(outcome == self.state.turn)
+            self.visits += 1
         else:
             value = self.value * self.visits
-            value += outcome * self.state.turn
+            value += int(outcome == self.state.turn)
+            self.visits += 1
             self.value = float(value) / float(self.visits)
 
     def UCBWeight(self):
@@ -94,7 +96,7 @@ def select(node):
         ucbWeights = [child.UCBWeight() for move, child in node.children.items()]
         totalUCB = sum(ucbWeights)
         proportions = [ucb/totalUCB for ucb in ucbWeights]
-        move = random.choice(moves, p=proportions)
+        move = np.random.choice(moves, p=proportions)
         return select(node.children[move])
 
 def simulate(state):
@@ -107,13 +109,6 @@ def simulate(state):
     move = random.choice(moves)
     return simulate(state.nextState(move))
 
-def rollout(root):
-    """Performs one rollout given the root node of MCTS."""
-    node = select(root)
-    new_value = simulate(node.state)
-    backpropagate(node, new_value, root)
-    print root.value
-
 def backpropagate(node, new_value, root):
     """Takes a new_value and recurssively backpropagates the new value to update
     up to the root node"""
@@ -121,6 +116,11 @@ def backpropagate(node, new_value, root):
     if not node == root:
         backpropagate(node.parent, new_value, root)
 
+def rollout(root):
+    """Performs one rollout given the root node of MCTS."""
+    node = select(root)
+    new_value = simulate(node.state)
+    backpropagate(node, new_value, root)
 
 def MCTS(root, rollouts):
     """Select a move by Monte Carlo tree search.
@@ -137,8 +137,16 @@ def MCTS(root, rollouts):
     Return:
         The legal move from node.state with the highest value estimate
     """
-    rollout(root)
-    raise NotImplementedError()
+    for i in range(rollouts):
+        rollout(root)
+    move = None
+    max_value = -float('inf')
+    for m, state in root.children.items():
+        v = state.getValue()
+        if v > max_value:
+            max_value = v
+            move = m
+    return m
 
 
 def parse_args():
