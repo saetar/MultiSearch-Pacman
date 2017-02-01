@@ -267,7 +267,10 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
 def getFoodLengthScore(state):
     return len(state.getFood().asList())
 
+
 def getAverageFoodDistancesScore(state):
+    if len(state.getFood().asList()) == 0:
+        return float('inf')
     return float(sum(getFoodDistances(state))) / getFoodLengthScore(state)
 
 
@@ -277,6 +280,45 @@ def getFoodDistances(state):
     foodDistances = sorted(map(lambda xy: dist(pacPos, xy), food))
     return foodDistances
 
+
+def getGhostPositions(state, exclude=False):
+    if not exclude:
+        return [state.configuration.getPosition() for state in state.getGhostStates()]
+    return [state.configuration.getPosition() if state.scaredTimer > 0 else 0 for state in state.getGhostStates()]
+
+
+def getGhostScaredTimeLeft(state):
+    return [ghostState.scaredTimer for ghostState in state.getGhostStates()]
+
+
+def getGhostScaredScore(state):
+    return float(sum(getGhostScaredTimeLeft(state))) / len(state.getGhostStates())
+
+
+def getGhostDistanceScore(state, threshold=3):
+    distances = getGhostPositions(state, exclude=True)
+    sortedDistances = sorted(distances)
+    closest = sortedDistances[0]
+    if closest >= threshold:
+        return 0
+    else:
+        return -1000
+
+
+def goForSpecialFood(state):
+    pacPos = state.getPacmanPosition()
+    ghosts = getGhostPositions(state, exclude=True)
+    capsules = state.data.capsules
+    capDist = sorted([dist(pacPos, capsule) for capsule in capsules])
+    return int(ghosts[0] < 3 and capDist[0] < 3)
+
+
+
+def getClosestFoodScore(state):
+    foodDistances = getFoodDistances(state)
+    if len(foodDistances) == 0:
+        return float('inf')
+    return -foodDistances[0]
 
 
 def betterEvaluationFunction(currentGameState):
@@ -290,20 +332,13 @@ def betterEvaluationFunction(currentGameState):
 
 
     """
+    closestFoodScore = getClosestFoodScore(currentGameState)
     averageFoodDistance = getAverageFoodDistancesScore(currentGameState)
-    
-    ghostPos = [state.configuration.getPosition() for state
-        in currentGameState.getGhostStates()]
-    timeLeft = [ghostState.scaredTimer for ghostState
-        in currentGameState.getGhostStates()]
-    timeLeftScore = sum(timeLeft)
-    ghostDist = sorted(map(lambda xy: dist(pos, xy), ghostPos))
-    ignoreGhosts = False
-    if sum(ghostDist) > 10:
-        ignoreGhosts = True
-    ghostScore = ghostDist[0] if not ignoreGhosts else 0
-    total_score = (2 * foodScore) - (10 * ghostScore) + (2 * closestFoodScore) + (30 * timeLeftScore)
-    print "ghostScore: {}\n\tfoodScore: {}\n\ttotalScore: {}".format(ghostScore, foodScore, total_score)
+    ghostScaredScore = getGhostScaredScore(currentGameState)
+    ghostDistanceScore = getGhostDistanceScore(currentGameState)
+    scores = [closestFoodScore, averageFoodDistance, ghostScaredScore, ghostDistanceScore, currentGameState.data.score]
+    weights = [0.4, 0.1, 0.5, 0.5, 0.4]
+    total_score = sum([scores[i] * weights[i] for i in range(len(scores))])
     return total_score
 
 
