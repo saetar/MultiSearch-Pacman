@@ -302,7 +302,7 @@ def getGhostDistanceScore(state, threshold=3):
     if closest >= threshold:
         return 0
     else:
-        return -1000
+        return -10 ** 7
 
 
 def goForSpecialFood(state):

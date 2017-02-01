@@ -63,7 +63,7 @@ class Node(object):
         result = 0
         if outcome == 0:
             result = 0.5
-        elif outcome == self.state.turn:
+        elif not outcome == self.state.turn:
             result = 1
         if math.isnan(self.value):
             self.value = result
@@ -188,7 +188,6 @@ def MCTS(root, rollouts):
     for i in range(rollouts):
         rollout(root)
     move = getBestMove(root)
-    print move
     return move
 
 
