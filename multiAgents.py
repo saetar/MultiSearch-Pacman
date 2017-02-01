@@ -263,6 +263,22 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         action, result = self.max_value(gameState, 0)
         return action
 
+
+def getFoodLengthScore(state):
+    return len(state.getFood().asList())
+
+def getAverageFoodDistancesScore(state):
+    return float(sum(getFoodDistances(state))) / getFoodLengthScore(state)
+
+
+def getFoodDistances(state):
+    pacPos = state.getPacmanPosition()
+    food = state.getFood().asList()
+    foodDistances = sorted(map(lambda xy: dist(pacPos, xy), food))
+    return foodDistances
+
+
+
 def betterEvaluationFunction(currentGameState):
     """
       Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable
@@ -274,14 +290,8 @@ def betterEvaluationFunction(currentGameState):
 
 
     """
-    pos = currentGameState.getPacmanPosition()
-    food = currentGameState.getFood().asList()
-    if len(food) == 0:
-        return float('inf')
-    foodScore = len(food) ** -1
-    foodDist = sorted(map(lambda xy: dist(pos, xy), food))
-    closestFoodScore = foodDist[0]
-    foodDistScore = float(sum(foodDist))
+    averageFoodDistance = getAverageFoodDistancesScore(currentGameState)
+    
     ghostPos = [state.configuration.getPosition() for state
         in currentGameState.getGhostStates()]
     timeLeft = [ghostState.scaredTimer for ghostState
@@ -295,6 +305,7 @@ def betterEvaluationFunction(currentGameState):
     total_score = (2 * foodScore) - (10 * ghostScore) + (2 * closestFoodScore) + (30 * timeLeftScore)
     print "ghostScore: {}\n\tfoodScore: {}\n\ttotalScore: {}".format(ghostScore, foodScore, total_score)
     return total_score
+
 
 def dist(xy1, xy2):
     return abs(xy1[0] - xy2[0]) + abs(xy1[1] + xy2[1])

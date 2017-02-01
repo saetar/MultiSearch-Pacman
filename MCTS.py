@@ -82,6 +82,7 @@ class Node(object):
         d = math.sqrt(math.log(self.parent.visits) / float(self.visits))
         return v + UCB_CONST * d
 
+
 def select(node):
     """Takes a node and recurssively picks children by the following rules:
     If a child has not been visited, add it to the tree and return it to be
@@ -101,7 +102,7 @@ def select(node):
         added = node.addMove(m)
         if added:
             return node.children[m]
-    if move == None:
+    if move is None:
         ucbWeights = [child.UCBWeight() for move, child in node.children.items()]
         newWeights = map(lambda n: n - min(ucbWeights), ucbWeights)
         totalUCB = sum(newWeights)
@@ -110,6 +111,7 @@ def select(node):
             proportions = [ucb/totalUCB for ucb in newWeights]
         move = np.random.choice(moves, p=proportions)
         return select(node.children[move])
+
 
 def simulate(state):
     """Takes leaf node of MCTS's state and simulates a run down to a
@@ -122,6 +124,7 @@ def simulate(state):
     move = random.choice(moves)
     return simulate(state.nextState(move))
 
+
 def backpropagate(node, new_value, root):
     """Takes a new_value and recurssively backpropagates the new value to update
     up to the root node"""
@@ -129,38 +132,43 @@ def backpropagate(node, new_value, root):
     if not node == root:
         backpropagate(node.parent, new_value, root)
 
+
 def rollout(root):
     """Performs one rollout given the root node of MCTS."""
     node = select(root)
     new_value = simulate(node.state)
     backpropagate(node, new_value, root)
 
+
 def maxMove(root):
     move = None
     max_value = -float('inf')
     children = root.children.items()
-    for m, node in root.children.items():
+    for m, node in children:
         v = node.getValue()
         if v > max_value:
             max_value = v
             move = m
     return move
 
+
 def minMove(root):
     move = None
     min_value = float('inf')
     children = root.children.items()
-    for m, node in root.children.items():
+    for m, node in children:
         v = node.getValue()
         if v < min_value:
             min_value = v
             move = m
     return move
 
+
 def getBestMove(root):
     if root.state.turn == -1:
         return minMove(root)
     return maxMove(root)
+
 
 def MCTS(root, rollouts):
     """Select a move by Monte Carlo tree search.
@@ -217,6 +225,7 @@ def randomMove(node):
     node.addMove(move)
     return move
 
+
 def runMultipleGames(numGames, args):
     """
     Runs numGames games, with no printing except for a report on which game
@@ -238,6 +247,7 @@ def runMultipleGames(numGames, args):
             draws += 1
     print "Player 1 games won: " + str(player1GamesWon) + "/" + str(numGames)
     print "Draws: " + str(draws) + "/" + str(numGames)
+
 
 def playGame(args):
     """
