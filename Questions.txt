@@ -4,7 +4,19 @@ With Minimax, we can avoid ghosts relatively successfully for a while, and colle
 the game is over. This does not mean Pacman operated optimally. 
 
 2) Describe the evaluation function in Question 5 - what features does it include, how do you combine them. This can be copied/pasted from your comments in the code; it's mainly here to make sure that somewhere, you describe your function!
+The overarching goal is to collect food. Therefore, we use a number of variables calculated
+from the food grid. First, we calculate the Manhattan distance to the closest food and take the negative
+(we want to be closer to food). Last, we calculate the number of food still to collect and take the negative.
+If this is 0 (meaning we won), we return inf. Otherwise we return -len(food) to indicate less food is more
+desirable.
 
+Next, we like ghosts to be scared, so we sum up the amount of time each ghost is scared. As well for those
+ghosts whose scaredTimer is 0, we calculate the distance between them and Pacman and if that Manhattan distance
+is less than 3, we return -10^8 (very bad), otherwise we return 0. This is because we do not really want to change
+Pacman's behavior if the ghost is not close.
+
+Last, we use a number of binary extremes, such as winning and losing overall. These return values of +/- inf to
+sway behavior to avoid death and seek victory. The weights were chosen just imperically.
 
 3) MCTS: Run your algorithm for 15 games with rollouts set to 75. This may take a little time, but not more than a minute or two. How many games does player 1 win?
 Player 1 won 15/15 games.
