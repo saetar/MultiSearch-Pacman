@@ -19,7 +19,7 @@ import math
 DISPLAY_BOARDS = False
 
 # UCB_CONST value - you should experiment with different values
-UCB_CONST = .5
+UCB_CONST = 0.5
 
 
 class Node(object):
@@ -165,8 +165,6 @@ def minMove(root):
 
 
 def getBestMove(root):
-    if root.state.turn == -1:
-        return minMove(root)
     return maxMove(root)
 
 

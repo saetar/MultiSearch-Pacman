@@ -17,6 +17,7 @@ from game import Directions
 import random, util
 
 from game import Agent
+from game import Directions
 
 class ReflexAgent(Agent):
     """
@@ -113,7 +114,7 @@ class MinimaxAgent(MultiAgentSearchAgent):
             return None, self.evaluationFunction(gameState)
         action = None
         if len(actions) == 0:
-            print "depth: {}\ngameState: {}".format(depth, gameState)
+            print 'depth: {}\ngameState: {}'.format(depth, gameState)
         for a in actions:
             successor_state = gameState.generateSuccessor(0, a)
             next_action, result = self.min_value(successor_state, depth, 1)
@@ -171,9 +172,9 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
             if result > max_val:
                 max_val = result
                 action = a
-                alpha = max_val
-            if alpha > beta:
+            if max_val > beta:
                 break
+            alpha = max(alpha, max_val)
         return action, max_val
 
     def min_value(self, gameState, depth, agentIndex, alpha, beta):
@@ -194,9 +195,9 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
             if result < min_val:
                 action = a
                 min_val = result
-                beta = result
-            if beta < alpha:
+            if min_val < alpha:
                 break
+            beta = min(beta, min_val)
         return action, min_val
 
     def getAction(self, gameState):
@@ -268,23 +269,49 @@ def getFoodLengthScore(state):
     return len(state.getFood().asList())
 
 
+def getTopFood(food):
+    sortedFood = sorted(food, key=lambda f: f[1])
+    return sortedFood[0]
+
+
+def getRightFood(food):
+    sortedFood = sorted(food, key=lambda f: f[0])
+    return sortedFood[0]
+
+
+def getLeftFood(food):
+    sortedFood = sorted(food, key=lambda f: -f[0])
+    return sortedFood[0]
+
+
+def getBottomFood(food):
+    sortedFood = sorted(food, key=lambda f: -f[1])
+    return sortedFood[0]
+
 def getAverageFoodDistancesScore(state):
-    if len(state.getFood().asList()) == 0:
-        return float('inf')
-    return float(sum(getFoodDistances(state))) / getFoodLengthScore(state)
+    pacPos = state.getPacmanPosition()
+    food = state.getFood().asList()
+    if len(food) == 0:
+        return 0
+    corners = [getTopFood(food), getBottomFood(food), getRightFood(food), getLeftFood(food)]
+    return sum([dist(corner, pacPos) for corner in corners]) / 4.0
+
+
+def BFS(state, pos1, pos2):
+    state.getMoves()
 
 
 def getFoodDistances(state):
     pacPos = state.getPacmanPosition()
     food = state.getFood().asList()
-    foodDistances = sorted(map(lambda xy: dist(pacPos, xy), food))
+    foodDistances = sorted(map(lambda xy: dist(pacPos, xy), set(food).union(set(state.data.capsules))))
     return foodDistances
 
 
 def getGhostPositions(state, exclude=False):
     if not exclude:
         return [state.configuration.getPosition() for state in state.getGhostStates()]
-    return [state.configuration.getPosition() if state.scaredTimer > 0 else 0 for state in state.getGhostStates()]
+    return filter(lambda x: x, [s.configuration.getPosition() if s.scaredTimer == 0 else False for s in state.getGhostStates()])
 
 
 def getGhostScaredTimeLeft(state):
@@ -295,14 +322,16 @@ def getGhostScaredScore(state):
     return float(sum(getGhostScaredTimeLeft(state))) / len(state.getGhostStates())
 
 
-def getGhostDistanceScore(state, threshold=3):
+def getGhostDistanceScore(state, threshold=2):
     distances = getGhostPositions(state, exclude=True)
+    if len(distances) == 0:
+        return 0
     sortedDistances = sorted(distances)
     closest = sortedDistances[0]
     if closest >= threshold:
         return 0
     else:
-        return -10 ** 7
+        return -10 ** 8
 
 
 def goForSpecialFood(state):
@@ -333,17 +362,21 @@ def betterEvaluationFunction(currentGameState):
 
     """
     closestFoodScore = getClosestFoodScore(currentGameState)
-    averageFoodDistance = getAverageFoodDistancesScore(currentGameState)
+    # averageFoodDistance = getAverageFoodDistancesScore(currentGameState)
     ghostScaredScore = getGhostScaredScore(currentGameState)
     ghostDistanceScore = getGhostDistanceScore(currentGameState)
-    scores = [closestFoodScore, averageFoodDistance, ghostScaredScore, ghostDistanceScore, currentGameState.data.score]
-    weights = [0.4, 0.1, 0.5, 0.5, 0.4]
+
+    foodScore = (-float(len(currentGameState.getFood().asList()))) if len(currentGameState.getFood().asList()) > 0 \
+        else float('inf')
+    scores = [closestFoodScore, ghostScaredScore,
+              ghostDistanceScore, currentGameState.data.score, foodScore]
+    weights = [0.4, 0.5, 0.5, .5, .4]
     total_score = sum([scores[i] * weights[i] for i in range(len(scores))])
     return total_score
 
 
 def dist(xy1, xy2):
-    return abs(xy1[0] - xy2[0]) + abs(xy1[1] + xy2[1])
+    return abs(xy1[0] - xy2[0]) + abs(xy1[1] - xy2[1])
 
 # Abbreviation
 better = betterEvaluationFunction
