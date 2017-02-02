@@ -365,12 +365,14 @@ def betterEvaluationFunction(currentGameState):
     # averageFoodDistance = getAverageFoodDistancesScore(currentGameState)
     ghostScaredScore = getGhostScaredScore(currentGameState)
     ghostDistanceScore = getGhostDistanceScore(currentGameState)
-
+    scoreChangeScore = currentGameState.data.scoreChange
+    didWinScore = float('inf') if currentGameState.data._win else 0
+    didLoseScore = -float('inf') if currentGameState.data._lose else 0
     foodScore = (-float(len(currentGameState.getFood().asList()))) if len(currentGameState.getFood().asList()) > 0 \
         else float('inf')
-    scores = [closestFoodScore, ghostScaredScore,
-              ghostDistanceScore, currentGameState.data.score, foodScore]
-    weights = [0.4, 0.5, 0.5, .5, .4]
+    scores = [closestFoodScore, ghostScaredScore, ghostDistanceScore,
+              currentGameState.data.score, foodScore, scoreChangeScore, didWinScore, didLoseScore]
+    weights = [0.4, 0.5, 0.5, .5, .4, 1, 1, 1]
     total_score = sum([scores[i] * weights[i] for i in range(len(scores))])
     return total_score
 
